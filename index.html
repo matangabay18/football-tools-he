@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>מחשבון טבלת בתים – מונדיאל ויורו | כדורגל בכלים</title>
+<meta name="description" content="מחשבון טבלת בתים חינמי למונדיאל וליורו: הזינו תוצאות וקבלו טבלה מדורגת עם הכרעת שוויון לפי ניקוד ישיר. כולל רשימת כל הזוכות במונדיאל וביורו.">
+<style>
+:root{--bg:#f6f8f5;--card:#fff;--ink:#14231a;--mut:#5a6b60;--acc:#0b7a3e;--line:#dfe6e0}
+@media(prefers-color-scheme:dark){:root{--bg:#0f1a14;--card:#16251c;--ink:#e8f0ea;--mut:#9bb0a2;--acc:#3ecf7a;--line:#25382c}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.6 system-ui,"Segoe UI",Arial,sans-serif}
+header,main,footer{max-width:860px;margin:0 auto;padding:0 16px}
+header{padding-top:28px}
+h1{font-size:1.7rem;margin:0 0 6px}
+h2{font-size:1.25rem;margin:0 0 10px}
+.sub{color:var(--mut);margin:0 0 20px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px;margin-bottom:20px}
+table{width:100%;border-collapse:collapse}
+th,td{padding:7px 8px;text-align:center;border-bottom:1px solid var(--line)}
+th{color:var(--mut);font-weight:600;font-size:.85rem}
+td.n,th.n{text-align:right}
+input[type=text]{width:100%;padding:7px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);font:inherit}
+input[type=number]{width:3.4rem;padding:7px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);font:inherit;text-align:center}
+.match{display:grid;grid-template-columns:1fr auto auto auto 1fr;gap:8px;align-items:center;padding:6px 0;border-bottom:1px solid var(--line)}
+.match span:first-child{text-align:left}
+.q{background:rgba(11,122,62,.12)}
+button{background:var(--acc);color:#fff;border:0;border-radius:8px;padding:9px 16px;font:inherit;cursor:pointer}
+.teams{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:20px}
+.note{color:var(--mut);font-size:.85rem}
+footer{padding-bottom:40px;color:var(--mut);font-size:.85rem}
+</style>
+</head>
+<body>
+<header>
+  <h1>מחשבון טבלת בתים</h1>
+  <p class="sub">מתאים למונדיאל, ליורו ולכל טורניר עם בתים של 4 נבחרות. הזינו שמות ותוצאות והטבלה מתעדכנת מיד.</p>
+</header>
+<main>
+  <section class="card">
+    <h2>נבחרות</h2>
+    <div class="teams" id="teams"></div>
+  </section>
+
+  <section class="card">
+    <h2>תוצאות המשחקים</h2>
+    <div id="matches"></div>
+    <p><button id="reset" type="button">איפוס</button></p>
+  </section>
+
+  <section class="card">
+    <h2>הטבלה</h2>
+    <table>
+      <thead><tr><th>#</th><th class="n">נבחרת</th><th>מש'</th><th>נצ'</th><th>תק'</th><th>הפ'</th><th>שערים</th><th>הפרש</th><th>נק'</th></tr></thead>
+      <tbody id="table"></tbody>
+    </table>
+    <p class="note">סדר הכרעה במקרה של שוויון בנקודות: תוצאות ישירות בין הנבחרות השוות (נקודות, הפרש שערים, שערים שהובקעו), ואז הפרש שערים כללי ושערים שהובקעו בכל הבית. כללי ההכרעה המלאים בטורנירים (כגון נקודות משמעת והגרלה) לא נכללים.</p>
+  </section>
+
+  <div class="cols">
+    <section class="card">
+      <h2>זוכות המונדיאל</h2>
+      <table><thead><tr><th>שנה</th><th class="n">זוכה</th><th class="n">סגנית</th></tr></thead><tbody id="wc"></tbody></table>
+    </section>
+    <section class="card">
+      <h2>זוכות היורו</h2>
+      <table><thead><tr><th>שנה</th><th class="n">זוכה</th><th class="n">סגנית</th></tr></thead><tbody id="eu"></tbody></table>
+    </section>
+  </div>
+</main>
+<footer>האתר אינו קשור ל-FIFA או ל-UEFA. הנתונים להמחשה ולמידע כללי.</footer>
+
+<script src="calc.js"></script>
+<script>
+var DEFAULT = ['נבחרת א','נבחרת ב','נבחרת ג','נבחרת ד'];
+var PAIRS = [[0,1],[2,3],[0,2],[1,3],[0,3],[1,2]];
+var KEY = 'group-calc-v1';
+var state = load() || {teams: DEFAULT.slice(), goals: PAIRS.map(function(){return ['','']})};
+
+function load(){ try{ return JSON.parse(localStorage.getItem(KEY)); }catch(e){ return null; } }
+function save(){ try{ localStorage.setItem(KEY, JSON.stringify(state)); }catch(e){} }
+function esc(s){ return String(s).replace(/[&<>"]/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
+
+function uniq(names){
+  // make duplicate/blank names unique so the table stays correct
+  var seen = {};
+  return names.map(function(n,i){
+    n = (n||'').trim() || DEFAULT[i];
+    var base = n, k = 2;
+    while (seen[n]) n = base + ' ' + (k++);
+    seen[n] = 1; return n;
+  });
+}
+
+function renderInputs(){
+  document.getElementById('teams').innerHTML = state.teams.map(function(t,i){
+    return '<input type="text" data-t="'+i+'" value="'+esc(t)+'" aria-label="שם נבחרת '+(i+1)+'">';
+  }).join('');
+  document.querySelectorAll('[data-t]').forEach(function(el){
+    el.addEventListener('input', function(){ state.teams[+el.dataset.t] = el.value; save(); renderMatches(); renderTable(); });
+  });
+  renderMatches();
+}
+
+function renderMatches(){
+  var names = uniq(state.teams);
+  var box = document.getElementById('matches');
+  // rebuild only if the structure is missing; otherwise just update names
+  if (!box.children.length){
+    box.innerHTML = PAIRS.map(function(p,i){
+      return '<div class="match"><span data-n="'+p[0]+'"></span>'+
+        '<input type="number" min="0" max="99" inputmode="numeric" data-g="'+i+',0" value="'+esc(state.goals[i][0])+'" aria-label="שערי בית">'+
+        '<span>:</span>'+
+        '<input type="number" min="0" max="99" inputmode="numeric" data-g="'+i+',1" value="'+esc(state.goals[i][1])+'" aria-label="שערי חוץ">'+
+        '<span data-n="'+p[1]+'"></span></div>';
+    }).join('');
+    box.querySelectorAll('[data-g]').forEach(function(el){
+      el.addEventListener('input', function(){
+        var ij = el.dataset.g.split(','); state.goals[+ij[0]][+ij[1]] = el.value; save(); renderTable();
+      });
+    });
+  }
+  box.querySelectorAll('[data-n]').forEach(function(s){ s.textContent = names[+s.dataset.n]; });
+}
+
+function renderTable(){
+  var names = uniq(state.teams);
+  var matches = PAIRS.map(function(p,i){
+    var a = state.goals[i][0], b = state.goals[i][1];
+    var ok = a !== '' && b !== '' && +a >= 0 && +b >= 0;
+    return {home: names[p[0]], away: names[p[1]], hg: ok ? +a : null, ag: ok ? +b : null};
+  });
+  var rows = standings(names, matches);
+  document.getElementById('table').innerHTML = rows.map(function(r,i){
+    return '<tr class="'+(i<2?'q':'')+'"><td>'+(i+1)+'</td><td class="n">'+esc(r.name)+'</td><td>'+r.p+'</td><td>'+r.w+'</td><td>'+r.d+'</td><td>'+r.l+'</td><td>'+r.gf+'–'+r.ga+'</td><td>'+(r.gd>0?'+':'')+r.gd+'</td><td><b>'+r.pts+'</b></td></tr>';
+  }).join('');
+}
+
+document.getElementById('reset').addEventListener('click', function(){
+  state = {teams: DEFAULT.slice(), goals: PAIRS.map(function(){return ['','']})};
+  save(); document.getElementById('matches').innerHTML = ''; renderInputs(); renderTable();
+});
+
+var WC = [[1930,'אורוגוואי','ארגנטינה'],[1934,'איטליה','צ\'כוסלובקיה'],[1938,'איטליה','הונגריה'],[1950,'אורוגוואי','ברזיל'],[1954,'מערב גרמניה','הונגריה'],[1958,'ברזיל','שוודיה'],[1962,'ברזיל','צ\'כוסלובקיה'],[1966,'אנגליה','מערב גרמניה'],[1970,'ברזיל','איטליה'],[1974,'מערב גרמניה','הולנד'],[1978,'ארגנטינה','הולנד'],[1982,'איטליה','מערב גרמניה'],[1986,'ארגנטינה','מערב גרמניה'],[1990,'מערב גרמניה','ארגנטינה'],[1994,'ברזיל','איטליה'],[1998,'צרפת','ברזיל'],[2002,'ברזיל','גרמניה'],[2006,'איטליה','צרפת'],[2010,'ספרד','הולנד'],[2014,'גרמניה','ארגנטינה'],[2018,'צרפת','קרואטיה'],[2022,'ארגנטינה','צרפת'],[2026,'ספרד','ארגנטינה']];
+var EU = [[1960,'ברית המועצות','יוגוסלביה'],[1964,'ספרד','ברית המועצות'],[1968,'איטליה','יוגוסלביה'],[1972,'מערב גרמניה','ברית המועצות'],[1976,'צ\'כוסלובקיה','מערב גרמניה'],[1980,'מערב גרמניה','בלגיה'],[1984,'צרפת','ספרד'],[1988,'הולנד','ברית המועצות'],[1992,'דנמרק','גרמניה'],[1996,'גרמניה','צ\'כיה'],[2000,'צרפת','איטליה'],[2004,'יוון','פורטוגל'],[2008,'ספרד','גרמניה'],[2012,'ספרד','איטליה'],[2016,'פורטוגל','צרפת'],[2020,'איטליה','אנגליה'],[2024,'ספרד','אנגליה']];
+function hist(id, data){
+  document.getElementById(id).innerHTML = data.slice().reverse().map(function(r){
+    return '<tr><td>'+r[0]+'</td><td class="n">'+r[1]+'</td><td class="n">'+r[2]+'</td></tr>';
+  }).join('');
+}
+hist('wc', WC); hist('eu', EU);
+renderInputs(); renderTable();
+</script>
+</body>
+</html>
