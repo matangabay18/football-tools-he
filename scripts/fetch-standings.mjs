@@ -1,6 +1,6 @@
-// Fetches league tables from football-data.org and writes docs/data/<CODE>.json.
+// Fetches league tables from football-data.org and writes docs/data/<CODE>.json (+ a daily history file).
 // Needs the FOOTBALL_DATA_KEY environment variable (a free API key). Without it the script exits quietly.
-import { writeFile, mkdir } from 'node:fs/promises';
+import { writeFile, mkdir, readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 
@@ -24,6 +24,28 @@ export function transform(code, json) {
   };
 }
 
+// Season history: at most one snapshot per day, and only when matches were played. Used for the trend charts.
+// Entry shape: { d: 'YYYY-MM-DD', md: matchday, n: total games played, t: { team: [position, points, played] } }
+export function mergeHistory(hist, data, date) {
+  const t = {};
+  for (const r of data.table) t[r.team] = [r.position, r.points, r.played];
+  const played = data.table.reduce((a, r) => a + r.played, 0);
+  const entry = { d: date, md: data.season ? data.season.matchday : null, n: played, t };
+  const out = Array.isArray(hist) ? hist.slice() : [];
+  const last = out[out.length - 1];
+  if (last && last.n === played) return out; // nothing new since the last snapshot
+  if (last && last.d === date) out[out.length - 1] = entry; else out.push(entry);
+  return out.slice(-600);
+}
+
+async function saveHistory(code, data) {
+  const file = path.join(OUT, 'history-' + code + '.json');
+  let hist = [];
+  try { hist = JSON.parse(await readFile(file, 'utf8')); } catch (e) { /* first run */ }
+  const next = mergeHistory(hist, data, new Date().toISOString().slice(0, 10));
+  if (JSON.stringify(next) !== JSON.stringify(hist)) await writeFile(file, JSON.stringify(next) + '\n');
+}
+
 async function main() {
   const key = process.env.FOOTBALL_DATA_KEY;
   if (!key) { console.log('FOOTBALL_DATA_KEY is not set; skipping.'); return; }
@@ -31,14 +53,15 @@ async function main() {
   let ok = 0;
   for (const code of COMPETITIONS) {
     try {
-      const res = await fetch(`https://api.football-data.org/v4/competitions/${code}/standings`, { headers: { 'X-Auth-Token': key } });
-      if (!res.ok) { console.log(`${code}: HTTP ${res.status}`); continue; }
+      const res = await fetch('https://api.football-data.org/v4/competitions/' + code + '/standings', { headers: { 'X-Auth-Token': key } });
+      if (!res.ok) { console.log(code + ': HTTP ' + res.status); continue; }
       const data = transform(code, await res.json());
-      if (!data) { console.log(`${code}: no table in response`); continue; }
-      await writeFile(path.join(OUT, `${code}.json`), JSON.stringify(data) + '\n');
-      console.log(`${code}: ${data.table.length} rows`);
+      if (!data) { console.log(code + ': no table in response'); continue; }
+      await writeFile(path.join(OUT, code + '.json'), JSON.stringify(data) + '\n');
+      await saveHistory(code, data);
+      console.log(code + ': ' + data.table.length + ' rows');
       ok++;
-    } catch (e) { console.log(`${code}: ${e.message}`); }
+    } catch (e) { console.log(code + ': ' + e.message); }
     await new Promise(r => setTimeout(r, 7000)); // stay well under 10 requests/minute
   }
   if (ok === 0) process.exitCode = 1;

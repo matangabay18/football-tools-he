@@ -9,7 +9,7 @@
 
   function he(name) { return (typeof HE !== 'undefined' && HE[name]) || name; }
   function slug(n) { return 'team-' + String(n).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') + '.html'; }
-  var teamLinks = sec.dataset.teams === '1';
+  function hasPage(n) { return typeof TEAM_PAGES !== 'undefined' && TEAM_PAGES.indexOf(slug(n)) >= 0; }
   function zone(pos, n) {
     if (zones.top && pos <= zones.top) return 'z-top';
     if (zones.mid && pos <= zones.mid) return 'z-mid';
@@ -24,7 +24,7 @@
     document.getElementById('live-body').innerHTML = d.table.map(function (r) {
       return '<tr class="' + zone(r.position, n) + '" data-pts="' + r.points + '" data-played="' + r.played + '">' +
         '<td><span class="rank">' + r.position + '</span></td>' +
-        '<td class="n"><button type="button" class="rowbtn">' + esc(he(r.team)) + '</button>' + (teamLinks ? ' <a class="tl" href="' + slug(r.team) + '" aria-label="דף הקבוצה">&lsaquo;</a>' : '') + '</td>' +
+        '<td class="n"><button type="button" class="rowbtn">' + esc(he(r.team)) + '</button>' + (hasPage(r.team) ? ' <a class="tl" href="' + slug(r.team) + '" aria-label="דף הקבוצה">&lsaquo;</a>' : '') + '</td>' +
         '<td>' + r.played + '</td><td class="hide-s">' + r.won + '</td><td class="hide-s">' + r.draw + '</td><td class="hide-s">' + r.lost + '</td>' +
         '<td class="hide-s">' + '<bdi dir="ltr">' + r.gf + '–' + r.ga + '</bdi>' + '</td><td><bdi dir="ltr">' + (r.gd > 0 ? '+' : '') + r.gd + '</bdi></td><td class="pts">' + r.points + '</td></tr>';
     }).join('');

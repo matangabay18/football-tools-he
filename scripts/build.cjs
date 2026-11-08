@@ -9,18 +9,24 @@ const legacy = ['tiebreakers', 'titles', 'faq', 'about', 'privacy'];
 
 // Hebrew club names (shared by the browser script and the team pages)
 const HE = JSON.parse(fs.readFileSync(path.join(__dirname, 'teams-he.json'), 'utf8'));
-fs.writeFileSync(path.join(DOCS, 'teams-he.js'), 'var HE = ' + JSON.stringify(HE) + ';\n');
 const he = n => HE[n] || n;
 const slug = n => 'team-' + String(n).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') + '.html';
+
+function readData(code) {
+  try { return JSON.parse(fs.readFileSync(path.join(DOCS, 'data', code + '.json'), 'utf8')); } catch (e) { return null; }
+}
+function readHistory(code) {
+  try { return JSON.parse(fs.readFileSync(path.join(DOCS, 'data', 'history-' + code + '.json'), 'utf8')); } catch (e) { return []; }
+}
+
+// Which clubs get their own page (league clubs); the browser script uses this to decide where to link
+const TEAM_SLUGS = ['PL', 'PD'].flatMap(c => { const d = readData(c); return d && Array.isArray(d.table) && d.table.length >= 18 ? d.table.map(r => slug(r.team)) : []; });
+fs.writeFileSync(path.join(DOCS, 'teams-he.js'), 'var HE = ' + JSON.stringify(HE) + ';\nvar TEAM_PAGES = ' + JSON.stringify(TEAM_SLUGS) + ';\n');
 
 // Version string for cache-busting, derived from the asset contents
 const VER = crypto.createHash('md5').update(
   ['style.css', 'needs.js', 'standings.js', 'group.js', 'calc.js', 'teams-he.js'].map(f => fs.readFileSync(path.join(DOCS, f), 'utf8')).join('')
 ).digest('hex').slice(0, 8);
-
-function readData(code) {
-  try { return JSON.parse(fs.readFileSync(path.join(DOCS, 'data', code + '.json'), 'utf8')); } catch (e) { return null; }
-}
 
 // ---- shared pieces -------------------------------------------------------------------------------
 const ICON = '<svg viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="8" fill="#0C5A35"/><circle cx="16" cy="16" r="6" fill="none" stroke="#F4F7EF" stroke-width="1.6"/><path d="M16 4v24" stroke="#F4F7EF" stroke-width="1.6"/></svg>';
@@ -253,81 +259,8 @@ for (const n of legacy) {
   });
 }
 
-// ---- Team pages (generated from docs/data/*.json) -------------------------------------------------
-const LEAGUES = {
-  PL: { name: 'פרמייר ליג', file: 'premier-league.html', nav: 'pl' },
-  PD: { name: 'לה ליגה', file: 'la-liga.html', nav: 'll' },
-};
-const bpts = n => (n === 1 ? 'בנקודה אחת' : n === 2 ? 'בשתי נקודות' : 'ב-' + n + ' נקודות');
-const npts = n => (n === 1 ? 'נקודה אחת' : n === 2 ? 'שתי נקודות' : n + ' נקודות');
-
-function teamPage(code, d, i) {
-  const L = LEAGUES[code], t = d.table, n = t.length, total = (n - 1) * 2;
-  const r = t[i], name = he(r.team), pos = r.position;
-  const leader = t[0], second = t[1], fourth = t[3], fifth = t[4], safe = t[n - 4], drop = t[n - 3];
-  const left = Math.max(0, total - r.played), max = r.points + 3 * left;
-  const pace = x => Math.round(x.points / Math.max(1, x.played) * total);
-  const date = new Date(d.updated).toLocaleDateString('he-IL', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Asia/Jerusalem' });
-
-  const title = pos === 1
-    ? `${name} מובילה ב${L.name}, יתרון של ${npts(r.points - second.points)}`
-    : `${name}: כמה נקודות חסרות בעונה? ${L.name}`;
-
-  let champ, cl, rel;
-  if (pos === 1) champ = `הקבוצה מובילה, עם יתרון של ${npts(r.points - second.points)} על ${he(second.team)}.`;
-  else if (r.points === leader.points) champ = `הקבוצה שווה נקודות למובילה ${he(leader.team)}, והפער ביניהן בהפרש שערים.`;
-  else champ = `הקבוצה מפגרת ${bpts(leader.points - r.points)} אחרי ${he(leader.team)}, המובילה.`;
-
-  if (pos <= 4) cl = `הקבוצה נמצאת באזור ליגת האלופות, עם יתרון של ${r.points - fifth.points === 0 ? 'אפס נקודות (שוות נקודות)' : npts(r.points - fifth.points)} על המקום החמישי (${he(fifth.team)}).`;
-  else cl = r.points === fourth.points
-    ? `הקבוצה שווה נקודות למקום הרביעי (${he(fourth.team)}), והפער ביניהן בהפרש שערים.`
-    : `הקבוצה מפגרת ${bpts(fourth.points - r.points)} אחרי המקום הרביעי (${he(fourth.team)}).`;
-
-  if (pos >= n - 2) rel = `הקבוצה נמצאת באזור הירידה, ${r.points === safe.points ? 'שווה נקודות' : npts(safe.points - r.points) + ' מתחת'} למקום ה-${n - 3} (${he(safe.team)}) שבטוח כרגע.`;
-  else rel = `הקבוצה מעל אזור הירידה, עם יתרון של ${r.points === drop.points ? 'אפס נקודות (שוות נקודות)' : npts(r.points - drop.points)} על המקום ה-${n - 2} (${he(drop.team)}).`;
-
-  const target = pace(fourth), safeTarget = pace(safe);
-  const sign = r.gd > 0 ? '+' + r.gd : String(r.gd);
-  const body = `<ul class="facts">
-<li><small>מקום בטבלה</small><b>${pos}</b></li>
-<li><small>נקודות</small><b>${r.points}</b></li>
-<li><small>משחקים</small><b>${r.played} מתוך ${total}</b></li>
-<li><small>הפרש שערים</small><b><bdi dir="ltr">${sign}</bdi></b></li></ul>
-<div class="prose">
-<h2>המצב נכון ל-${date}</h2>
-<ul>
-<li><strong>אליפות:</strong> ${champ}</li>
-<li><strong>ליגת האלופות:</strong> ${cl}</li>
-<li><strong>הישארות בליגה:</strong> ${rel}</li>
-</ul>
-<p>נותרו ${left} משחקים, ולכן המקסימום האפשרי הוא ${max} נקודות.</p>
-</div>
-${tool({
-    h: `כמה נקודות חסרות ל${name}?`,
-    note: 'היעד ההתחלתי הוא קצב המקום הרביעי כיום. אפשר לשנות אותו בשדה או בכפתורים.',
-    pts: r.points, played: r.played, total, target,
-    presets: [{ l: 'קצב המקום הרביעי: ' + target, v: target }, { l: 'קצב קו ההישארות: ' + safeTarget, v: safeTarget }, { l: 'הישארות (אומדן נפוץ): 40', v: 40 }],
-  })}
-<div class="prose">
-<p class="note">הקצבים מחושבים מהנקודות הנוכחיות של הקבוצות במקומות האלה ומניחים שימשיכו באותו ממוצע למשחק עד סוף העונה. זו הערכה פשוטה ולא תחזית. הנתונים מתעדכנים כמה פעמים ביום ועלולים להתעכב.</p>
-<p><a href="${L.file}">לטבלה המלאה של ${L.name}</a></p>
-</div>`;
-  return {
-    file: slug(r.team), nav: L.nav, small: true, title: title + ' | כדורגל בכלים',
-    desc: `מקום ${pos} ב${L.name} עם ${r.points} נקודות אחרי ${r.played} משחקים. כמה נקודות חסרות ל${name} לאליפות, לליגת האלופות ולהישארות.`,
-    h1: `${name}: כמה נקודות חסרות?`, sub: `מקום ${pos} ב${L.name} אחרי ${r.played} משחקים, עם ${r.points} נקודות.`,
-    scripts: ['needs.js'], body,
-  };
-}
-
-for (const code of Object.keys(LEAGUES)) {
-  const d = readData(code);
-  const lp = pages.find(p => p.file === LEAGUES[code].file);
-  if (!d || !Array.isArray(d.table) || d.table.length < 18) continue;
-  const teamPages = d.table.map((_, i) => teamPage(code, d, i));
-  pages.push(...teamPages);
-  lp.body += `\n<div class="prose"><h2>דפי הקבוצות</h2></div><ul class="teams-grid">${d.table.map(r => `<li><a href="${slug(r.team)}">${he(r.team)}</a></li>`).join('')}</ul>`;
-}
+// ---- Sections built from the standings data (team pages, ladders, insights, leaders) ---------------
+require('./data-sections.cjs')({ pages, tool, tw, he, slug, readData, readHistory, TEAM_SLUGS });
 
 for (const p of pages) fs.writeFileSync(path.join(DOCS, p.file), page(p), 'utf8');
 
