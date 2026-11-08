@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>מחשבון טבלת בתים למונדיאל וליורו</title>
+<meta name="description" content="מחשבון טבלת בתים חינמי למונדיאל וליורו: הזינו תוצאות וקבלו טבלה מדורגת עם הכרעת שוויון לפי תוצאות ישירות.">
+<link rel="canonical" href="https://matangabay18.github.io/football-tools-he/group-calculator.html">
+<meta property="og:type" content="website"><meta property="og:locale" content="he_IL">
+<meta property="og:title" content="מחשבון טבלת בתים למונדיאל וליורו"><meta property="og:description" content="מחשבון טבלת בתים חינמי למונדיאל וליורו: הזינו תוצאות וקבלו טבלה מדורגת עם הכרעת שוויון לפי תוצאות ישירות."><meta property="og:url" content="https://matangabay18.github.io/football-tools-he/group-calculator.html">
+<meta name="theme-color" content="#0C5A35">
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2032%2032%22%3E%3Crect%20width%3D%2232%22%20height%3D%2232%22%20rx%3D%228%22%20fill%3D%22%230C5A35%22%2F%3E%3Ccircle%20cx%3D%2216%22%20cy%3D%2216%22%20r%3D%226%22%20fill%3D%22none%22%20stroke%3D%22%23F4F7EF%22%20stroke-width%3D%221.6%22%2F%3E%3Cpath%20d%3D%22M16%204v24%22%20stroke%3D%22%23F4F7EF%22%20stroke-width%3D%221.6%22%2F%3E%3C%2Fsvg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600&family=Secular+One&display=swap">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="site"><div class="wrap"><a class="brand" href="./"><svg viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="8" fill="#0C5A35"/><circle cx="16" cy="16" r="6" fill="none" stroke="#F4F7EF" stroke-width="1.6"/><path d="M16 4v24" stroke="#F4F7EF" stroke-width="1.6"/></svg><span>כדורגל בכלים</span></a><nav aria-label="ניווט ראשי"><a href="./">ראשי</a><a href="champions-league.html">ליגת האלופות</a><a href="premier-league.html">פרמייר ליג</a><a href="la-liga.html">לה ליגה</a><a href="group-calculator.html" aria-current="page">טורנירי נבחרות</a></nav></div></header>
+<section class="hero hero--sm"><svg class="lines" viewBox="0 0 200 200" fill="none" stroke="#F4F7EF" stroke-width="1" aria-hidden="true"><circle cx="100" cy="100" r="46" opacity=".5"/><circle cx="100" cy="100" r="92" opacity=".22"/><circle cx="100" cy="100" r="2.4" fill="#F4F7EF" stroke="none" opacity=".6"/><path d="M100 0v200" opacity=".5"/></svg><div class="wrap"><h1>מחשבון טבלת בתים</h1><p class="sub">מתאים למונדיאל, ליורו ולכל טורניר עם בתים של ארבע נבחרות.</p></div></section>
+<main class="wrap">
+<div class="calc">
+<div class="stack">
+<section class="card"><h2>נבחרות</h2><div class="teamgrid" id="teams"></div></section>
+<section class="card"><h2>תוצאות המשחקים</h2><div id="matches"></div><div class="actions"><button class="btn btn--ghost" id="reset" type="button">איפוס</button></div></section>
+</div>
+<section class="card tbl" aria-live="polite"><h2>הטבלה</h2>
+<div class="tablewrap"><table><thead><tr><th>#</th><th class="n">נבחרת</th><th>מש׳</th><th class="hide-s">נצ׳</th><th class="hide-s">תק׳</th><th class="hide-s">הפ׳</th><th>שערים</th><th>הפרש</th><th>נק׳</th></tr></thead><tbody id="table"></tbody></table></div>
+<p class="legend"><i></i><span class="note">שני המקומות הראשונים מסומנים להמחשה. מי עולה בפועל נקבע בתקנון הטורניר.</span></p>
+<p class="note">הכרעה בשוויון: תוצאות ישירות בין הקבוצות השוות, ואז הפרש שערים כללי ושערים שהובקעו. נקודות משמעת והגרלה אינן כלולות. פרטים ב<a href="tiebreakers.html">הכרעת שוויון</a>.</p>
+</section>
+</div>
+</main>
+<footer class="site-foot"><div class="wrap"><span>האתר אינו קשור ל-FIFA, ל-UEFA או לליגות. הנתונים למידע כללי.</span><span><a href="tiebreakers.html">הכרעת שוויון</a><a href="titles.html">מי זכתה הכי הרבה</a><a href="faq.html">שאלות נפוצות</a><a href="about.html">אודות</a><a href="privacy.html">מדיניות פרטיות</a></span></div></footer>
+<script src="calc.js"></script><script src="group.js"></script>
+</body>
+</html>
