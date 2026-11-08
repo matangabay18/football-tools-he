@@ -69,7 +69,7 @@
     document.getElementById('table').innerHTML = rows.map(function (r, i) {
       return '<tr class="' + (i < 2 ? 'q' : '') + '"><td><span class="rank">' + (i + 1) + '</span></td><td class="n">' + esc(r.name) + '</td>' +
         '<td>' + r.p + '</td><td class="hide-s">' + r.w + '</td><td class="hide-s">' + r.d + '</td><td class="hide-s">' + r.l + '</td>' +
-        '<td>' + r.gf + '–' + r.ga + '</td><td>' + (r.gd > 0 ? '+' : '') + r.gd + '</td><td class="pts">' + r.pts + '</td></tr>';
+        '<td>' + '<bdi dir="ltr">' + r.gf + '–' + r.ga + '</bdi>' + '</td><td><bdi dir="ltr">' + (r.gd > 0 ? '+' : '') + r.gd + '</bdi></td><td class="pts">' + r.pts + '</td></tr>';
     }).join('');
   }
 
