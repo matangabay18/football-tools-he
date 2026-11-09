@@ -209,3 +209,5 @@ tr.z-bot{background:var(--bad-bg)} tr.z-bot .rank{background:var(--bad);color:va
 .leaders ol li b{font:400 1.05rem/1.4 var(--display)}
 .leaders>li>a{font-size:.9rem;font-weight:600}
 @media(max-width:520px){.ladder li{grid-template-columns:1.5rem minmax(0,8.5rem) minmax(30px,1fr) 2rem;gap:8px}}
+
+@media(max-width:520px){.site nav a{padding:8px 7px;font-size:.9rem}}

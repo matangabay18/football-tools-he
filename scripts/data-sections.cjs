@@ -4,8 +4,8 @@ module.exports = function build(ctx) {
   const { pages, tool, tw, he, slug, readData, readHistory, TEAM_SLUGS } = ctx;
   const hasPage = new Set(TEAM_SLUGS);
   const LEAGUES = {
-    PL: { name: 'פרמייר ליג', in: 'בפרמייר ליג', file: 'premier-league.html', nav: 'pl' },
-    PD: { name: 'לה ליגה', in: 'בלה ליגה', file: 'la-liga.html', nav: 'll' },
+    PL: { name: 'פרמייר ליג', in: 'בפרמייר ליג', from: 'מהפרמייר ליג', file: 'premier-league.html', nav: 'pl' },
+    PD: { name: 'לה ליגה', in: 'בלה ליגה', from: 'מלה ליגה', file: 'la-liga.html', nav: 'll' },
   };
 
   // ---- small helpers -----------------------------------------------------------------------------
@@ -193,6 +193,73 @@ module.exports = function build(ctx) {
     };
   }
 
+  // ---- goal pages: title race, Champions League race, survival race -------------------------------
+  const base = L => L.file.replace('.html', '');
+  const goalFile = (code, kind) => base(LEAGUES[code]) + '-' + kind + '.html';
+  const GOALS = {
+    title: { slug: 'title-race', label: 'האליפות', short: 'מירוץ האליפות' },
+    cl: { slug: 'champions-league-race', label: 'ליגת האלופות', short: 'המאבק על ליגת האלופות' },
+    survive: { slug: 'survival-race', label: 'הישארות', short: 'המאבק על ההישארות' },
+  };
+  const goalFileOf = (code, kind) => base(LEAGUES[code]) + '-' + GOALS[kind].slug + '.html';
+
+  function goalPage(code, d, kind) {
+    const L = LEAGUES[code], t = d.table, n = t.length, total = (n - 1) * 2, G = GOALS[kind];
+    const pace = x => Math.round(x.points / Math.max(1, x.played) * total);
+    const date = fmtDate(d.updated, { day: 'numeric', month: 'long', year: 'numeric' });
+    const cfg = {
+      title: { from: 0, to: 3, bench: 0, defaultIdx: 1, benchName: 'המובילה' },
+      cl: { from: 2, to: 5, bench: 3, defaultIdx: 4, benchName: 'המקום הרביעי' },
+      survive: { from: n - 6, to: n - 1, bench: n - 4, defaultIdx: n - 3, benchName: 'המקום ה-' + (n - 3) + ' (האחרון שבטוח)' },
+    }[kind];
+    const B = t[cfg.bench], D = t[cfg.defaultIdx];
+    const rows = t.slice(cfg.from, cfg.to + 1).map((r, k) => {
+      const i = cfg.from + k, diff = r.points - B.points;
+      const gap = i === cfg.bench ? 'היעד' : ltr(signed(diff)) + ' נק׳';
+      return '<tr class="' + zoneOf(code, r.position, n) + '"><td><span class="rank">' + r.position + '</span></td><td class="n">' + teamLink(r.team) + '</td><td>' + r.points + '</td><td>' + r.played +
+        '</td><td><b>' + pace(r) + '</b></td><td>' + gap + '</td></tr>';
+    }).join('');
+    const table = '<div class="tablewrap"><table><thead><tr><th>#</th><th class="n">קבוצה</th><th>נק׳</th><th>משחקים</th><th>קצב צפוי</th><th>פער מהיעד</th></tr></thead><tbody>' + rows + '</tbody></table></div>' +
+      '<p class="note">הקצב הצפוי הוא הממוצע של הקבוצה בנקודות למשחק כפול ' + total + ' משחקים. הפער מחושב ביחס ל' + cfg.benchName.replace(/^ה/, '') + ' (' + he(B.team) + ').</p>';
+
+    let lead, faq;
+    if (kind === 'title') {
+      lead = 'נכון ל-' + date + ' ' + he(t[0].team) + ' מובילה עם ' + t[0].points + ' נקודות אחרי ' + t[0].played + ' משחקים, ו' + he(t[1].team) + ' שנייה ' + (t[0].points === t[1].points ? 'עם אותן נקודות' : 'ב-' + npts(t[0].points - t[1].points) + ' מאחור') + '. בקצב הנוכחי המובילה תסיים עם כ-' + pace(t[0]) + ' נקודות.';
+      faq = [['כמה משחקים נותרו למובילה?', 'למובילה נותרו ' + Math.max(0, total - t[0].played) + ' משחקים מתוך ' + total + '.'],
+        ['כמה נקודות צריך כדי לזכות באליפות?', 'אין מספר קבוע. הוא תלוי בקצב של שאר הקבוצות. הדרך להעריך אותו היא לבדוק את קצב המובילות כיום ולהניח שיישמר, וזה מה שהמחשבון כאן עושה.']];
+    } else if (kind === 'cl') {
+      lead = 'ארבע הקבוצות הראשונות מעפילות לליגת האלופות (ובעונות מסוימות גם החמישית). נכון ל-' + date + ' המקום הרביעי שייך ל' + he(t[3].team) + ' עם ' + t[3].points + ' נקודות אחרי ' + t[3].played + ' משחקים, והמקום החמישי ל' + he(t[4].team) + ' עם ' + t[4].points + '. בקצב הנוכחי המקום הרביעי יסיים עם כ-' + pace(t[3]) + ' נקודות.';
+      faq = [['כמה קבוצות ' + L.from + ' עולות לליגת האלופות?', 'בדרך כלל ארבע. בעונות שבהן ההתאחדות מקבלת מקום נוסף בזכות ביצועים באירופה, גם הקבוצה החמישית עולה. בעונת 2025/26 קיבלו מקום חמישי גם אנגליה וגם ספרד.'],
+        ['מה קורה בשוויון נקודות?', 'ראו את הדף על <a href="tiebreakers-england-spain.html">הכרעת שוויון בפרמייר ליג ובלה ליגה</a>.']];
+    } else {
+      lead = 'שלוש הקבוצות האחרונות יורדות לליגה השנייה. נכון ל-' + date + ' המקום ה-' + (n - 3) + ' שייך ל' + he(B.team) + ' עם ' + B.points + ' נקודות, והמקום ה-' + (n - 2) + ' ל' + he(t[n - 3].team) + ' עם ' + t[n - 3].points + '. בקצב הנוכחי הקבוצה במקום ה-' + (n - 3) + ' תסיים עם כ-' + pace(B) + ' נקודות.';
+      faq = [['האם 40 נקודות מספיקות כדי להישאר?', '40 נקודות הוא אומדן נפוץ, אבל הוא משתנה בין עונות. הדרך המהימנה יותר היא להסתכל על קצב הקבוצה במקום ה-' + (n - 3) + ' כיום, כפי שמוצג בטבלה למעלה.'],
+        ['כמה קבוצות יורדות?', 'שלוש הקבוצות האחרונות בטבלה.']];
+    }
+
+    const presets = kind === 'title'
+      ? [{ l: 'קצב המובילה: ' + pace(t[0]), v: pace(t[0]) }, { l: 'קצב המקום השני: ' + pace(t[1]), v: pace(t[1]) }]
+      : kind === 'cl'
+        ? [{ l: 'קצב המקום הרביעי: ' + pace(t[3]), v: pace(t[3]) }, { l: 'קצב המקום החמישי: ' + pace(t[4]), v: pace(t[4]) }]
+        : [{ l: 'קצב המקום ה-' + (n - 3) + ': ' + pace(B), v: pace(B) }, { l: 'אומדן נפוץ: 40', v: 40 }];
+    const others = Object.keys(GOALS).filter(k => k !== kind).map(k => '<li><a href="' + goalFileOf(code, k) + '"><strong>' + GOALS[k].short + '</strong><span>' + L.name + '</span></a></li>').join('');
+    const ids = new Set(t.slice(cfg.from, cfg.to + 1).map(r => r.team));
+    const body = '<div class="prose"><p>' + lead + '</p><h2>מי נמצאת על הגבול</h2></div>' + table +
+      tool({
+        h: 'כמה נקודות חסרות?', note: 'הנתונים ההתחלתיים הם של ' + he(D.team) + ' (מקום ' + D.position + '), והיעד הוא קצב ' + cfg.benchName + '. אפשר להחליף לכל קבוצה.',
+        pts: D.points, played: D.played, total, target: pace(B), presets,
+      }) +
+      '<div class="prose"><h2>שאלות נפוצות</h2>' + faq.map(q => '<details><summary>' + q[0] + '</summary><p>' + q[1] + '</p></details>').join('') +
+      '<p class="note">החישובים מניחים שכל קבוצה תמשיך באותו ממוצע נקודות למשחק עד סוף העונה. זו הערכה פשוטה ולא תחזית. ' + 'נתונים: football-data.org, עודכן ב-' + date + '.</p></div>' +
+      '<div class="prose"><h2>המשך קריאה</h2></div><ul class="links">' + others + '<li><a href="' + L.file + '"><strong>הטבלה המלאה</strong><span>' + L.name + ', עם מחשבון</span></a></li></ul>';
+    const title = G.label === 'הישארות' ? 'הישארות ' + L.in + ': כמה נקודות צריך?' : G.label + ' ' + L.in + ': כמה נקודות צריך?';
+    return {
+      file: goalFileOf(code, kind), nav: L.nav, small: true, title: title + ' | כדורגל בכלים',
+      desc: G.short + ' ' + L.in + ': ' + (kind === 'title' ? 'המובילה ' + he(t[0].team) + ' עם ' + t[0].points + ' נקודות' : kind === 'cl' ? 'המקום הרביעי ' + he(t[3].team) + ' עם ' + t[3].points + ' נקודות' : 'המקום ה-' + (n - 3) + ' ' + he(B.team) + ' עם ' + B.points + ' נקודות') + '. מחשבון וקצב צפוי לכל קבוצה.',
+      h1: title, sub: G.short + ' בעונה הנוכחית, עם נתונים מעודכנים ומחשבון.', scripts: ['needs.js'], body,
+    };
+  }
+
   // ---- inject into pages --------------------------------------------------------------------------
   const afterLive = (page, html) => {
     const i = page.body.indexOf('id="live-section"');
@@ -211,7 +278,10 @@ module.exports = function build(ctx) {
     const ins = insights(code, d);
     afterLive(page, (ins ? stage('תמונת מצב', ins) : '') + stage('מדרגות הנקודות', '<section class="card">' + ladder(code, d) + sourceNote(d) + '</section>'));
     pages.push(...d.table.map((_, i) => teamPage(code, d, i)));
-    page.body += '\n<div class="prose"><h2>דפי הקבוצות</h2></div><ul class="teams-grid">' + d.table.map(r => '<li><a href="' + slug(r.team) + '">' + he(r.team) + '</a></li>').join('') + '</ul>';
+    pages.push(...Object.keys(GOALS).map(k => goalPage(code, d, k)));
+    page.body += '\n<div class="prose"><h2>מדריכים לפי יעד</h2></div><ul class="links">' + Object.keys(GOALS).map(k =>
+      '<li><a href="' + goalFileOf(code, k) + '"><strong>' + GOALS[k].short + '</strong><span>קצב צפוי, הפערים בין הקבוצות ומחשבון</span></a></li>').join('') + '</ul>';
+    page.body +='\n<div class="prose"><h2>דפי הקבוצות</h2></div><ul class="teams-grid">' + d.table.map(r => '<li><a href="' + slug(r.team) + '">' + he(r.team) + '</a></li>').join('') + '</ul>';
   }
 
   const cl = data.CL, clPage = pages.find(p => p.file === 'champions-league.html');
