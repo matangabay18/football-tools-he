@@ -52,6 +52,10 @@ function page(p) {
   const chips = p.chips ? `<ul class="chips">${p.chips.map(c => `<li>${c}</li>`).join('')}</ul>` : '';
   const scripts = (p.scripts || []).map(s => `<script src="${s}?v=${VER}"></script>`).join('');
   const url = BASE + (p.file === 'index.html' ? '' : p.file);
+  const ld = [{ '@type': 'WebSite', name: 'כדורגל בכלים', url: BASE, inLanguage: 'he' }];
+  if (p.faq && p.faq.length) ld.push({ '@type': 'FAQPage', mainEntity: p.faq.map(([q, a]) => ({ '@type': 'Question', name: q, acceptedAnswer: { '@type': 'Answer', text: String(a).replace(/<[^>]+>/g, '') } })) });
+  if (p.article) ld.push({ '@type': 'Article', headline: p.h1, inLanguage: 'he', dateModified: new Date().toISOString().slice(0, 10), mainEntityOfPage: url });
+  const jsonld = '<script type="application/ld+json">' + JSON.stringify({ '@context': 'https://schema.org', '@graph': ld }).replace(/</g, '\u003c') + '</script>';
   return `<!doctype html>
 <html lang="he" dir="rtl">
 <head>
@@ -67,6 +71,7 @@ function page(p) {
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600&family=Secular+One&display=swap">
 <link rel="stylesheet" href="style.css?v=${VER}">
+${jsonld}
 </head>
 <body>
 <header class="site"><div class="wrap"><a class="brand" href="./">${ICON}<span>כדורגל בכלים</span></a><nav aria-label="ניווט ראשי">${nav}</nav></div></header>
@@ -113,6 +118,16 @@ pages.push({
 <li><small>אלופת אירופה (נבחרות) 2024</small><b>ספרד</b></li>
 <li><small>קבוצות בשלב הליגה של ליגת האלופות</small><b>36, בטבלה אחת</b></li>
 </ul>
+<div class="prose">
+<h2>מה יש כאן</h2>
+<p>האתר מרכז בעברית מחשבונים ונתונים עדכניים על ליגת האלופות, הפרמייר ליג, לה ליגה וטורנירי הנבחרות. לכל קבוצה בפרמייר ליג ובלה ליגה יש דף משלה, עם פרופיל מול שאר הליגה, השוואה לשכנות בטבלה ותחזית קצב.</p>
+<h2>איך מחשבים</h2>
+<ul>
+<li><strong>קצב צפוי:</strong> הנקודות של הקבוצה חלקי המשחקים ששיחקה, כפול מספר המשחקים בעונה.</li>
+<li><strong>עדכון:</strong> הנתונים מגיעים מ-football-data.org ומתעדכנים אוטומטית כמה פעמים ביום, ולכן ייתכן עיכוב קטן אחרי משחקים.</li>
+<li><strong>הערכה ולא תחזית:</strong> החישובים מניחים שכל קבוצה תמשיך באותו ממוצע. אין באתר המלצות הימורים.</li>
+</ul>
+</div>
 <h2>מדריכים</h2>
 <ul class="links">
 <li><a href="tiebreakers.html"><strong>הכרעת שוויון בנקודות</strong><span>מה קורה כששתי קבוצות מסיימות עם אותן נקודות, עם דוגמה מחושבת.</span></a></li>
@@ -152,6 +167,7 @@ ${tool({
 <div class="prose">
 <h2>ובמקרה של שוויון?</h2>
 <p>לפי תקנון UEFA, כששתי קבוצות או יותר מסיימות עם אותן נקודות, ההפרש הכללי בין השערים שהובקעו לשערים שהוכנסו הוא הקריטריון הראשון להכרעה. כדאי לבדוק את התקנון המעודכן של העונה.</p>
+<p>הסבר מלא על הפורמט, כולל מי משחקת נגד מי ולמה כל נקודה חשובה: <a href="champions-league-league-phase.html">שלב הליגה בליגת האלופות בפירוט</a>.</p>
 <p>רוצים לחשב טבלה של בית עם ארבע נבחרות, כמו במונדיאל וביורו? <a href="group-calculator.html">למחשבון טבלת בתים</a>.</p>
 </div>`,
 });
@@ -183,7 +199,7 @@ ${tool({
 <div class="prose">
 <p class="note">40 נקודות הוא אומדן נפוץ להישארות בליגה, אבל הקו משתנה בין עונות וקבוצות. הממוצעים של 1.5 ו-2 נקודות למשחק הם חישוב נוח ולא קו רשמי.</p>
 <h2>ובמקרה של שוויון?</h2>
-<p>בפרמייר ליג, כששתי קבוצות מסיימות עם אותן נקודות, מכריע קודם כל הפרש השערים הכללי, ואחריו מספר השערים שהובקעו.</p>
+<p>בפרמייר ליג, כששתי קבוצות מסיימות עם אותן נקודות, מכריע קודם כל הפרש השערים הכללי, ואחריו מספר השערים שהובקעו. <a href="tiebreakers-england-spain.html">הסבר מפורט והשוואה ללה ליגה</a>.</p>
 </div>`,
 });
 
@@ -214,7 +230,7 @@ ${tool({
 <div class="prose">
 <p class="note">40 נקודות הוא אומדן נפוץ להישארות בליגה, אבל הקו משתנה בין עונות. הממוצעים של 1.5 ו-2 נקודות למשחק הם חישוב נוח ולא קו רשמי.</p>
 <h2>ובמקרה של שוויון?</h2>
-<p>בניגוד לפרמייר ליג, בלה ליגה בדרך כלל מכריעים קודם כל לפי התוצאות הישירות בין הקבוצות השוות, ורק אחר כך לפי הפרש שערים כללי. פרטים נוספים בדף <a href="tiebreakers.html">הכרעת שוויון</a>.</p>
+<p>בניגוד לפרמייר ליג, בלה ליגה בדרך כלל מכריעים קודם כל לפי התוצאות הישירות בין הקבוצות השוות, ורק אחר כך לפי הפרש שערים כללי. הסבר מפורט עם דוגמה מחושבת בדף <a href="tiebreakers-england-spain.html">הכרעת שוויון בפרמייר ליג ובלה ליגה</a>.</p>
 </div>`,
 });
 
@@ -259,12 +275,14 @@ for (const n of legacy) {
   pages.push({
     file: n + '.html', nav: (n === 'tiebreakers' || n === 'titles') ? 't' : '', small: true,
     title: j.title, desc: j.desc, h1: j.h1, sub: j.sub, body,
+    article: n === 'tiebreakers' || n === 'titles',
+    faq: n === 'faq' ? [...j.body.matchAll(/<details[^>]*><summary>(.*?)<\/summary>\s*<p>([\s\S]*?)<\/p>/g)].map(m => [m[1], m[2]]) : undefined,
   });
 }
 
 // ---- Explainer: tiebreakers in England vs Spain ---------------------------------------------------
 pages.push({
-  file: 'tiebreakers-england-spain.html', nav: 'pl', small: true,
+  file: 'tiebreakers-england-spain.html', nav: 'pl', small: true, article: true,
   title: 'הכרעת שוויון בפרמייר ליג ובלה ליגה: מה ההבדל?',
   desc: 'כששתי קבוצות מסיימות עם אותן נקודות, בפרמייר ליג מכריע הפרש השערים ובלה ליגה בדרך כלל התוצאות הישירות. הסבר עם דוגמה מחושבת.',
   h1: 'הכרעת שוויון בפרמייר ליג ובלה ליגה: מה ההבדל?',
@@ -291,7 +309,7 @@ pages.push({
 
 // ---- Explainer: Champions League league phase -----------------------------------------------------
 pages.push({
-  file: 'champions-league-league-phase.html', nav: 'cl', small: true,
+  file: 'champions-league-league-phase.html', nav: 'cl', small: true, article: true,
   title: 'שלב הליגה בליגת האלופות: איך זה עובד?',
   desc: 'הסבר מלא על שלב הליגה של 36 קבוצות: שמונה משחקים מול יריבות שונות, טבלה אחת, ומה קורה במקומות 1 עד 8, 9 עד 24 ו-25 עד 36.',
   h1: 'שלב הליגה בליגת האלופות: איך זה עובד?',

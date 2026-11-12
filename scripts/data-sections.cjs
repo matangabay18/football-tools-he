@@ -256,7 +256,7 @@ module.exports = function build(ctx) {
     return {
       file: goalFileOf(code, kind), nav: L.nav, small: true, title: title + ' | כדורגל בכלים',
       desc: G.short + ' ' + L.in + ': ' + (kind === 'title' ? 'המובילה ' + he(t[0].team) + ' עם ' + t[0].points + ' נקודות' : kind === 'cl' ? 'המקום הרביעי ' + he(t[3].team) + ' עם ' + t[3].points + ' נקודות' : 'המקום ה-' + (n - 3) + ' ' + he(B.team) + ' עם ' + B.points + ' נקודות') + '. מחשבון וקצב צפוי לכל קבוצה.',
-      h1: title, sub: G.short + ' בעונה הנוכחית, עם נתונים מעודכנים ומחשבון.', scripts: ['needs.js'], body,
+      h1: title, sub: G.short + ' בעונה הנוכחית, עם נתונים מעודכנים ומחשבון.', scripts: ['needs.js'], body, faq,
     };
   }
 
